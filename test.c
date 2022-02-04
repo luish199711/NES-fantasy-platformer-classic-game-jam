@@ -46,18 +46,26 @@ byte getchar(byte x, byte y) {
 }
 
 //CPUT Char XY
+//----------------------------------------------
+//puts character ch into the VRAM buffer so that
+//it is written into the screen at column x and
+//row y
 void cputcxy(byte x, byte y, char ch) {
   vrambuf_put(NTADR_A(x,y), &ch, 1);
 }
 
 //CPUT String XY
+//----------------------------------------------
+//puts string of characters str into the VRAM
+//buffer so that it is written into the screen at
+//column x and row y
 void cputsxy(byte x, byte y, const char* str) {
   vrambuf_put(NTADR_A(x,y), str, strlen(str));
 }
 
 //clrscr
 //---------------------------------------------
-//clear screen to refresh VRAM data
+//clear screen to refresh VRAM buffer data
 void clrscr() {
   vrambuf_clear();
   ppu_off();
@@ -81,56 +89,77 @@ typedef struct {
 
 Player snake;
 
-typedef struct {
-  byte fx;
-  byte fy;  
-} Food;
-
 byte gameover;
 byte frames_per_move;
+byte fx, fy;
 
 #define START_SPEED 12
 #define MAX_SPEED 5
 
-const char BOX_CHARS[3] = { '+','-','!' };
-
-void draw_box(byte x, byte y, byte x2, byte y2, const char* chars) {
+//DRAW BOX (draw_box)
+//----------------------------------------------
+//draws the outer border of the play area
+void draw_box(byte x, byte y, byte x2, byte y2) {
   byte x1 = x; //copy x into x1
 
   //put '+' onto the corners of the screen
-  cputcxy(x, y, chars[0]);//	Top Left
-  cputcxy(x2, y, chars[0]);//	Top Right
-  cputcxy(x, y2, chars[0]);//	Bottom Left
-  cputcxy(x2, y2, chars[0]);//	Bottom Right
+  cputcxy(x, y, '#');//	Top Left
+  cputcxy(x2, y, '#');//	Top Right
+  cputcxy(x, y2, '#');//	Bottom Left
+  cputcxy(x2, y2, '#');//	Bottom Right
 
   while (++x < x2) {
-    cputcxy(x, y, chars[1]);//	Top side
-    cputcxy(x, y2, chars[1]);// Bottom side
+    cputcxy(x, y, '#');//	Top side
+    cputcxy(x, y2, '#');// Bottom side
   }
   while (++y < y2) {
-    cputcxy(x1, y, chars[2]);//	Left side
-    cputcxy(x2, y, chars[2]);// Right side
+    cputcxy(x1, y, '#');//	Left side
+    cputcxy(x2, y, '#');// Right side
   }
 }
 
+//DRAW PLAYFIELD (draw_playfield)
+//----------------------------------------------
+//draws the play area of the game and prints the
+//player's score
 void draw_playfield() {
-  draw_box(1,2,COLS,ROWS-1,BOX_CHARS); //Draw border
+  draw_box(1,2,COLS,ROWS); //Draw border
   
   //Display Score
   cputcxy(9,1,snake.score+'0');
+  cputcxy(10,10,0x06);
   cputsxy(2,1,"SCORE: ");
 }
 
-typedef enum { D_RIGHT, D_DOWN, D_LEFT, D_UP } dir_t;
-const char DIR_X[4] = { 1, 0, -1, 0 };
-const char DIR_Y[4] = { 0, 1, 0, -1 };
+void spawn_fruit(){
+  //vrambuf_flush();
+  fx = 10;
+  fy = 10;
+  cputcxy(fx,fy,'A');
+}
 
+//=================================================================
+//			BUTTON DATA
+//=================================================================
+typedef enum { D_RIGHT, D_DOWN, D_LEFT, D_UP } dir_t; //Button Direction
+const char DIR_X[4] = { 1, 0, -1, 0 }; //X Direction values (1 = right, -1 = left)
+const char DIR_Y[4] = { 0, 1, 0, -1 }; //Y Direction values (1 = down, -1 = up)
+
+//INITIALIZE GAME (init_game)
+//----------------------------------------------
+//initializes the data of Player struct snake
 void init_game() {
   snake.head_attr = '0';
+  spawn_fruit();
+//set fruit position
 //  snake.tail_attr = 0x06;
   frames_per_move = START_SPEED;
 }
 
+//RESET PLAYES (reset_players)
+//----------------------------------------------
+//reset the players to their origin from the
+//beginning of the game.
 void reset_players() {
   snake.x = snake.y = 5;
   snake.dir = D_RIGHT;
@@ -145,13 +174,19 @@ void move_player(Player* p) {
   cputcxy(p->x, p->y, p->tail_attr);
   p->x += DIR_X[p->dir];
   p->y += DIR_Y[p->dir];
-  if (getchar(p->x, p->y) != 0)
-    p->collided = 1;
+  if (getchar(p->x, p->y) != 0){
+    if(getchar(p->x, p->y) == 0x06){
+      p->score += 1; 
+    }
+    
+    else
+      p->collided = 1;
+  }
   draw_player(p);
 }
 
 void human_control(Player* p) {
-  byte dir = 0xff;
+  byte dir = 0xff; //11111111
   byte joy;
   joy = joy_read (JOY_1);
 
@@ -227,9 +262,9 @@ void main(void)
   pal_col(2,0x20);	// grey
   pal_col(3,0x30);	// white
   
-  joy_install(joy_static_stddrv);
-  vrambuf_clear();
-  set_vram_update(updbuf);  
+  joy_install(joy_static_stddrv); //installs control functions
+  vrambuf_clear();		//Clear the VRAM buffer
+  set_vram_update(updbuf);  	//
   
   vrambuf_flush();
   vrambuf_flush();
