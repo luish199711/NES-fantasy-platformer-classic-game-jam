@@ -115,7 +115,10 @@ void draw_box(byte x, byte y, byte x2, byte y2, const char* chars) {
 
 void draw_playfield() {
   draw_box(1,2,COLS,ROWS-1,BOX_CHARS); //Draw border
-  cputsxy(2,1,"SCORE: ");	//Display Score
+  
+  //Display Score
+  cputcxy(9,1,snake.score+'0');
+  cputsxy(2,1,"SCORE: ");
 }
 
 typedef enum { D_RIGHT, D_DOWN, D_LEFT, D_UP } dir_t;
@@ -193,11 +196,16 @@ void play_round() {
   while (1) {
     make_move();
     if (gameover) return; // attract mode -> start
-    if (snake.collided) break;
+    if (snake.collided){
+      if(getchar(snake.x, snake.y) == 0x06){
+        snake.score++;
+      }
+      else
+        break;
+    }
   }
   flash_colliders();
   // add scores to players that didn't collide
-  if (snake.collided) snake.score++;
   // increase speed
   if (frames_per_move > MAX_SPEED) frames_per_move--;
 }
