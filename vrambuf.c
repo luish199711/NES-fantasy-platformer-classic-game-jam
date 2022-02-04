@@ -1,10 +1,6 @@
 
 #include "neslib.h"
-
 #include "vrambuf.h"
-//#link "vrambuf.c"
-
-
 #include <string.h>
 
 // index to end of buffer
@@ -37,7 +33,6 @@ void vrambuf_flush(void) {
 // using horizontal increment
 void vrambuf_put(word addr, register const char* str, byte len) {
   // if bytes won't fit, wait for vsync and flush buffer
-   // for VBUFSIZE, goto vrambuf.h
   if (VBUFSIZE-4-len < updptr) {
     vrambuf_flush();
   }
