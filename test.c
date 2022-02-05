@@ -24,6 +24,8 @@
 #include "vrambuf.h"
 //#link "vrambuf.c"
 
+
+//From statusbar.c
 // function to write a string into the name table
 //   adr = start address in name table
 //   str = pointer to string
@@ -32,6 +34,7 @@ void put_str(unsigned int adr, const char *str) {
   vram_write(str, strlen(str)); // write bytes to PPU
 }
 
+//From seige.c
 void clrscr() {
   vrambuf_clear();
   ppu_off();
@@ -139,7 +142,10 @@ void play_storyA()
   }  
 }
 
-
+//game_title
+//==================================================
+//Written by Diego Marquez
+//prepares the title screen
 void game_title()
 {
   // write text to name table
